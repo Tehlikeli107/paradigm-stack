@@ -90,3 +90,11 @@ Transformer repeats the same computation (attention) 6+ times. This creates redu
 ## License
 
 MIT
+
+### Per-Step Comparison (WikiText-2, same params, same steps)
+| Model | PPL | Params | Speed |
+|---|---|---|---|
+| **GLUConv 6L** | **3.54** | 5.32M | **584s** |
+| RoPE-Transformer 6L | 3.56 | 5.33M | 1606s |
+
+GLUConv beats RoPE-Transformer **per-step AND per-second**. No attention. No position embedding. O(N) complexity. 2.7x faster.
