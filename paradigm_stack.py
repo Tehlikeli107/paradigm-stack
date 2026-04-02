@@ -204,6 +204,37 @@ class DilatedConvBlock(nn.Module):
         return self.norm2(x + self.ffn(x))
 
 
+class DiffusionReactionBlock(nn.Module):
+    """Thermodynamics-inspired: information diffuses like heat + nonlinear reaction.
+    u = u + dt * (D*Laplacian(u) + tanh(W*u))
+    Causal: only diffuses leftward. Fully parallel (no sequential loop needed for small n_steps)."""
+    def __init__(self, d, n_steps=3, dropout=0.1):
+        super().__init__()
+        self.n_steps = n_steps
+        self.dt = nn.Parameter(torch.tensor(0.1))
+        self.diff_coeff = nn.Linear(d, d)
+        self.reaction = nn.Linear(d, d)
+        self.proj = nn.Linear(d, d)
+        self.drop = nn.Dropout(dropout)
+        self.norm = nn.LayerNorm(d)
+        self.ffn = nn.Sequential(
+            nn.Linear(d, d*4), nn.GELU(), nn.Dropout(dropout),
+            nn.Linear(d*4, d), nn.Dropout(dropout)
+        )
+        self.norm2 = nn.LayerNorm(d)
+
+    def forward(self, x):
+        B, N, D = x.shape
+        u = x.clone()
+        dt = torch.sigmoid(self.dt) * 0.3
+        for _ in range(self.n_steps):
+            u_left = F.pad(u[:, :-1], (0, 0, 1, 0))
+            laplacian = u_left - u  # causal: only left neighbor
+            u = u + dt * (self.diff_coeff(laplacian) + torch.tanh(self.reaction(u)))
+        x = self.norm(x + self.drop(self.proj(u)))
+        return self.norm2(x + self.ffn(x))
+
+
 PARADIGM_BLOCKS = {
     'A': AttnBlock,
     'M': MultiScaleConvBlock,
@@ -211,6 +242,7 @@ PARADIGM_BLOCKS = {
     'L': CausalLocalBlock,
     'D': CausalDiffBlock,
     'C': DilatedConvBlock,
+    'R': DiffusionReactionBlock,
 }
 
 
@@ -247,6 +279,8 @@ class ParadigmStack(nn.Module):
             elif code == 'C':
                 self.layers.append(block_cls(d_model, dilation=2**(dil_idx % 4), dropout=dropout))
                 dil_idx += 1
+            elif code == 'R':
+                self.layers.append(block_cls(d_model, n_steps=3, dropout=dropout))
             else:
                 self.layers.append(block_cls(d_model, dropout))
 
@@ -277,7 +311,8 @@ class ParadigmStack(nn.Module):
         lines = [f"ParadigmStack(pattern='{self.pattern}', params={self.count_params():,}, use_pos={self.use_pos})"]
         paradigm_names = {
             'A': 'Attention', 'M': 'MultiScaleConv', 'P': 'CausalPool',
-            'L': 'CausalLocal', 'D': 'CausalDiff', 'C': 'DilatedConv'
+            'L': 'CausalLocal', 'D': 'CausalDiff', 'C': 'DilatedConv',
+            'R': 'DiffusionReaction'
         }
         for i, code in enumerate(self.pattern):
             lines.append(f"  Layer {i}: {paradigm_names.get(code, code)}")
@@ -290,7 +325,7 @@ if __name__ == "__main__":
 
     print("=== Paradigm Stack Architecture ===\n")
 
-    for pattern, use_pos in [("CCPCCP", False), ("AADMMMP", True), ("AAMM", True), ("MMMMMM", True)]:
+    for pattern, use_pos in [("CRCRCP", False), ("CCPCCP", False), ("AADMMMP", True)]:
         model = ParadigmStack(vocab_size=50257, d_model=256, pattern=pattern,
                               seq_len=512, use_pos=use_pos).to(device)
         print(model.describe())
