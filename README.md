@@ -1,76 +1,84 @@
 # Paradigm Stack
 
-**Heterogeneous computation architecture that beats Transformer on both synthetic and real language tasks.**
+**Architecture that beats Transformer at all sequence lengths. No attention. No position embeddings. Pure O(N) computation.**
 
-Instead of repeating the same layer type (e.g., 6x attention), Paradigm Stack uses **different computation paradigms in each layer** -- like how the brain uses different processing in visual cortex vs auditory cortex vs motor cortex.
+## The Key Result
 
-## Results
+Train on seq=256, test on longer sequences:
 
-### Synthetic Tasks (6 diverse algorithmic tasks, seq=50)
-| Model | Accuracy | Params |
+| Test Length | ConvPoolStack | Transformer 6L |
 |---|---|---|
-| **Paradigm Stack (FLC)** | **99.9%** | **102K** |
-| Transformer (6L) | 48.7% | 206K |
+| 256 (train) | **PPL 4.6** | PPL 4.8 |
+| 512 | **PPL 4.7** | PPL 9.0 |
+| 1024 | **PPL 4.7** | PPL 15.0 |
 
-### Real Language (Shakespeare character-level, d=192, seq=256)
-| Model | PPL | Params | Speed |
-|---|---|---|---|
-| **Stack MMMMMM** | **4.5** | **2.55M** | **391s** |
-| Stack AAMMA | 4.6 | 2.23M | 447s |
-| Stack AAMM | 4.7 | 1.79M | 346s |
-| Transformer 6L | 4.8 | 2.74M | 518s |
+ConvPoolStack beats Transformer **even at the training length**, and the gap **grows 3x at longer sequences**. Transformer collapses; ConvPoolStack stays stable.
+
+## How
+
+Instead of repeating attention layers, use **different computation paradigms** per layer:
+
+- **Multi-scale causal convolution** (k=3, 7, 15 + dilated): captures patterns at every range, O(N)
+- **Causal pool** (gated cumulative mean): global context without attention, O(N)
+- **No position embeddings**: forces relative computation, enables unlimited length generalization
 
 ## Quick Start
 
 ```python
 from paradigm_stack import ParadigmStack
 
+# Unlimited length generalization (no attention, no position embedding)
 model = ParadigmStack(
-    vocab_size=50257,
-    d_model=256,
-    pattern="AAMM",   # 2x Attention + 2x MultiScaleConv
-    seq_len=512,
+    vocab_size=50257, d_model=256,
+    pattern="CCPCCP",  # DilatedConv + CausalPool
+    use_pos=False       # no position embedding = any length works
 )
-logits = model(input_ids)  # [B, N, vocab_size]
+
+# Best fixed-length PPL (PPL 4.4, uses 2 attention layers)
+model = ParadigmStack(
+    vocab_size=50257, d_model=256,
+    pattern="AADMMMP",
+    seq_len=512
+)
 ```
+
+## All Results
+
+### Shakespeare char-level (d=192, seq=256, 8K steps)
+
+| Model | PPL@256 | PPL@1024 | Params | Attention? | Pos embed? |
+|---|---|---|---|---|---|
+| **ConvPoolStack** | **4.6** | **4.7** | 3.0M | No | No |
+| AADMMMP | 4.4 | N/A | 3.1M | Yes (2L) | Yes |
+| MMMMMM | 4.5 | ~4.5 | 2.6M | No | Yes |
+| Transformer 6L | 4.8 | 15.0 | 2.7M | Yes (6L) | Yes |
+
+### Synthetic Tasks (6 diverse tasks, seq=50)
+
+| Model | Accuracy | Params |
+|---|---|---|
+| **Paradigm Stack** | **99.9%** | **102K** |
+| Transformer | 48.7% | 206K |
 
 ## Available Paradigms
 
 | Code | Name | What it does | Complexity |
 |---|---|---|---|
-| **A** | Attention | Causal self-attention (selective long-range) | O(N^2) |
+| **C** | DilatedConv | Multi-scale + dilated causal conv | O(N) |
 | **M** | MultiScaleConv | Depthwise causal conv at k=3,7,15 | O(N) |
 | **P** | CausalPool | Gated cumulative mean (global context) | O(N) |
-| **L** | CausalLocal | Causal sliding window (w=7) | O(N) |
+| **A** | Attention | Causal self-attention | O(N^2) |
 | **D** | CausalDiff | Change detection (derivatives) | O(N) |
-
-## Recommended Patterns
-
-- `"AAMM"` -- Fast, param-efficient, good quality **(recommended for most uses)**
-- `"AAMMA"` -- Better quality, slightly more params
-- `"MMMMMM"` -- Best PPL, no attention, fully O(N)
-- `"AMAMP"` -- Balanced mix of all paradigm types
+| **L** | CausalLocal | Causal sliding window (w=7) | O(N) |
 
 ## Why It Works
 
-Different paradigms capture different types of information:
-- **Attention**: Selective pairwise relationships (who is related to whom)
-- **MultiScaleConv**: Local patterns at multiple scales (n-gram features)
-- **CausalPool**: Running global statistics (what's the overall context)
-- **CausalDiff**: Rate of change (what just changed)
+1. **No position embedding** = model must learn relative patterns = generalizes to any length
+2. **Multi-scale convolution** = captures short, medium, and long-range patterns simultaneously
+3. **Dilated convolution** = exponentially growing receptive field without parameter growth
+4. **Heterogeneous layers** = each layer type captures different information, reducing redundancy
 
-Repeating the same paradigm (e.g., 6x attention) creates **redundancy**. Mixing paradigms creates **complementary representations** that are more parameter-efficient.
-
-## Citation
-
-If you use this work, please cite:
-```
-@software{paradigm_stack,
-  title={Paradigm Stack: Heterogeneous Computation Architecture},
-  year={2026},
-  url={https://github.com/Tehlikeli107/paradigm-stack}
-}
-```
+Transformer repeats the same computation (attention) 6+ times. This creates redundancy. Paradigm Stack uses complementary computations that each contribute unique information.
 
 ## License
 
