@@ -98,3 +98,11 @@ MIT
 | RoPE-Transformer 6L | 3.56 | 5.33M | 1606s |
 
 GLUConv beats RoPE-Transformer **per-step AND per-second**. No attention. No position embedding. O(N) complexity. 2.7x faster.
+
+### Long Sequence (WikiText-2, seq=2048, 5K steps)
+| Model | PPL | Speed | VRAM |
+|---|---|---|---|
+| **GLUConv 6L** | **3.78** | **338s** | 9.2 GB |
+| RoPE-Transformer 6L | 4.02 | 7400s | 9.2 GB |
+
+At seq=2048, GLUConv is **22x faster** and **6% better PPL**. Same VRAM. This is where O(N) vs O(N^2) truly matters.
