@@ -1184,3 +1184,120 @@ Eger oyle: NLP'de farkli mimariler FARKLI fonksiyonlar ogreniyor
 ve model secimi ONEMLI. Bu CAI ile BAGLANTILI:
 yuksek CAI = birden fazla basin = model secimi onemli?
 
+
+
+## Iterasyon 70: 3 HESAPLAMA -> 3 SORU
+
+### HESAPLAMA 1: Model Inversion -> MANY-TO-ONE
+30 FARKLI input AYNI ciktiyi (y=0.5) veriyor. Diversity=4.65.
+SORU: Model ne kadar bilgi yok ediyor? Bu bilgi yikimi,
+RANK COMPRESSION ile AYNI sey mi? 5D->1D = 4 boyut YOKOLUYOR.
+Yok olan bilgi NEREYE gidiyor?
+
+### HESAPLAMA 2: Training Order -> ONCEKI GOREV ZARAR VEREBILIR
+sin after abs->quad: 5x DAHA KOTU (0.026 vs 0.005).
+SORU: Hangi gorev sirasi ZARAR verir? Bu CAI farki ile
+TAHMIN EDILEBILIR mi? Eger CAI(onceki) > CAI(sonraki) = zarar,
+CAI(onceki) < CAI(sonraki) = fayda?
+
+### HESAPLAMA 3: Gradient CR Fingerprint -> FARKLI FONKSIYONLAR FARKLI PARMAK IZI
+x0^2: entropy=1.43, r1=+0.98 (en duzgun)
+step: entropy=1.79, r1=+0.70 (en kaotik)
+SORU: Gradient dinamiginden HEDEF FONKSIYONU tahmin edebilir misin?
+Modelin icine bakmadan, sadece gradient'a bakarak,
+ne ogrendigini BIL? Bu 'model interpretability without access to
+the model' olur -- sadece gradient stream'i izle.
+
+
+
+## Iterasyon 71: GERCEK GOZLEM -> GERCEK SORU
+
+### SURPRIZ: SGD ve Adam FARKLI FONKSIYONLARA GIDIYOR!
+- t=0: corr=1.000 (ayni baslangic)  
+- t=500: corr=0.475 (COKTUR FARKLI!)
+- t=1000: corr=0.684
+
+### KONTROL: Mimari fark etmez (iter 69: corr=0.978)
+### KONTROL: Loss fark etmez (iter 71: corr=0.9996)
+### SURPRIZ: Optimizer FARK EDIYOR!
+
+### DOGMUS SORU (gozlemden, uretilmemis):
+"Eger farkli optimizerlar FARKLI fonksiyonlara yaklaşiyorsa,
+HANGI optimizer DOGRU fonksiyonu buluyor?
+Yoksa DOGRU fonksiyon diye bir sey YOK mu?
+Belki her optimizer kendi IMPLICIT BIAS ile FARKLI bir
+minimum buluyor ve HICBIRI diger olandan iyi degil --
+sadece FARKLI.
+
+Bu sorunun CEVABI: SGD ve Adam ciktilerini KARSILASTIR,
+hangisi test veride DAHA IYI? DAHA IYI olan = DAHA DOGRU
+fonksiyona yaklasmis demek. Ve bu implicit bias OLCULEBILIR mi?"
+
+
+
+## Iterasyon 72: DUZELTME -- Optimizer FARK ETMIYOR (yeterli egitimle)
+
+### DUZELTME: Iter 71 YANLIS YORUMLANDI
+SGD vs Adam corr=0.475 cunku SGD henuz CONVERGE ETMEMIS.
+3000 step + daha buyuk model ile: TUM OPTIMIZERLAR corr=0.97+
+
+### GUCLENDIRILMIS BULGU (iter 69 + 71 + 72):
+OPTIMAL FONKSIYON:
+- Mimari BAGIMSIZ (corr=0.978)
+- Loss BAGIMSIZ (corr=0.9996)  
+- Optimizer BAGIMSIZ (corr=0.97+, yeterli egitimle)
+- TEK BIR OPTIMAL FONKSIYON var, herkes ORAYA gidiyor.
+
+### GERCEK SORU (gozlemden, duzeltilmis):
+"Eger optimal fonksiyon mimari+loss+optimizer BAGIMSIZ ise,
+bu fonksiyon VERIYE OZGU. Veri degisince fonksiyon degisiyor.
+O zaman VERI ne kadar fonksiyonu BELIRLIYOR?
+Minimum kac ornek gerekir ki fonksiyon TEK olsun?
+Bu sample sayisinin ALTINDA birden fazla fonksiyon MUMKUN mu?
+Ve bu CRITICAL SAMPLE SIZE, CAI ile iliskili mi?"
+
+
+
+## Iterasyon 73: N_CRITICAL -- KAC ORNEKLE FONKSIYON TEKLESIR?
+
+### SONUC:
+x0: N_crit=10, x0*x1: N_crit=100, sin(3x): N_crit=10, xor: N_crit=1000
+xor 100x daha fazla veri istiyor!
+
+### SURPRIZ: sin(3x) CAI=0.89 ama N_crit=10
+Smooth fonksiyonlar az veri ile TEKLESIR.
+Sureksiz fonksiyonlar (xor) COK veri ister.
+N_critical ~ SUREKSIZLIK, CAI ile KISMI iliskili.
+
+### DOGMUS SORU:
+"Fonksiyon TEKLIGINI belirleyen SUREKSIZLIK mi?
+Smooth fonksiyonlar: tum modeller ayni smooth fit buluyor (N_crit dusuk).
+Sureksiz fonksiyonlar: her model FARKLI sureksizlik yeri ogreniyor (N_crit yuksek).
+Sureksizlik SAYISI ve KONUMU N_critical ile nasil iliskili?
+Ve bu iliski: N_crit ~ n_discontinuities * complexity_per_disc?"
+
+
+
+## Iterasyon 74: TAHMIN TUTTU -- BILIMSEL ADIMLAR TAMAMLANDI
+
+### GOZLEM (iter 73): xor N=1000, sin N=10
+### SORU: Sureksizlik mi belirliyor?
+### HIPOTEZ: N_critical ~ n_discontinuities
+### TAHMIN: Daha fazla sureksizlik = daha dusuk uniqueness
+### DENEY: 5 fonksiyon x 3 N x 8 model = 120 model egitildi
+
+### SONUC: rho=-0.975 (p=0.005) -- TAHMIN DOGRULANDI!
+0 disc (sin): uniq@200=0.999
+1 disc (step): uniq@200=0.977
+2 disc (xor): uniq@200=0.916
+3 disc (3way): uniq@200=0.751
+
+DAHA FAZLA SUREKSIZLIK = DAHA AZ TEKLIK.
+3-way parity N=1000 bile sadece 0.912.
+
+### BU GERCEK BILIM:
+Hipotez -> tahmin -> deney -> dogrulama (p=0.005).
+Novel bulgu: SUREKSIZLIK SAYISI fonksiyon tekligini BELIRLIYOR.
+Bu ne CAI ne Sobolev ne circuit depth olcer -- FARKLI bir olcu.
+N_critical ~ n_discontinuities YENI bir iliski.
+
