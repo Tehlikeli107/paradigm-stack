@@ -1014,3 +1014,34 @@ Isolation vs accuracy: rho=+0.552 (p=0.098)
 cat = zor cunku dig/bird/deer'a yakin, spread dagilim.
 ship = kolay cunku izole, tight dagilim.
 
+
+
+## Iterasyon 59: Difficulty-Guided Compute Allocation BASARISIZ
+
+### BULGU: Uniform %78.6 > Guided %77.6 > Extreme %74.6
+Kolay task'lardan epoch kesmek ZARALI (-2pp).
+Zor task'lara epoch eklemek YETERSIZ (+0.3pp).
+Diminishing returns: zor task'lar epoch'la IYILESMEZ.
+
+### DERS: CAI zorluk TAHMIN EDER ama naive epoch allocation IYI DEGIL.
+Dogru strateji: zor task -> farkli MIMARI/LR/AUGMENTATION, epoch degil.
+CAI'nin pratik degeri: tahmin + karar destek, otomatik allocation DEGIL.
+
+### GRADE: A- -> B+ (pratik uygulama basarisiz)
+
+
+
+## Iterasyon 62: SKLEARN DOGRULAMASI
+
+### 3 ek dataset, 5/6 dogru tahmin:
+- Iris: rho=0.97, easiest+hardest CORRECT
+- Wine: rho=1.00, easiest+hardest CORRECT  
+- Digits: rho=0.60, easiest CORRECT, hardest YANLIS (8 vs 9)
+
+### TOPLAM: 7 dataset, hepsinde pozitif korelasyon
+Toy (rho=0.90), CIFAR binary (rho=0.79), CIFAR 10-class (ship/cat),
+Iris (rho=0.97), Wine (rho=1.00), Digits (rho=0.60)
+
+### GRADE GUNCELLEME: B -> B+
+Gercek sklearn verilerinde de calisiyor. Tutarli bulgu.
+
