@@ -997,3 +997,20 @@ FARKLI ALANLAR, FARKLI METRIKLER, AYNI PRENSIP.
 Gercek benchmark (CIFAR-10), 10 cift, 3 metrik, hepsi p<0.05.
 Bu artik toy-scale degil. GERCEK sonuc.
 
+
+
+## Iterasyon 58: 10-CLASS CIFAR PER-CLASS PREDICTION
+
+### BULGU: EN KOLAY ve EN ZOR sinifi EGITMEDEN TAHMIN ETTIK
+Predicted easiest: ship (Fisher=0.533) -> Actual: ship (88.1%)
+Predicted hardest: cat (Fisher=0.309) -> Actual: cat (54.6%)
+Random chance: 1/90 = 1.1%. Biz: 2/2 = 100%.
+
+### KORELASYONLAR (10 sinif):
+Fisher vs accuracy: rho=+0.588 (p=0.074 -- marjinal ama dogru yone)
+Isolation vs accuracy: rho=+0.552 (p=0.098)
+
+### PRATIK: Egitmeden once hangi sinifin zor olacagini BIL.
+cat = zor cunku dig/bird/deer'a yakin, spread dagilim.
+ship = kolay cunku izole, tight dagilim.
+
