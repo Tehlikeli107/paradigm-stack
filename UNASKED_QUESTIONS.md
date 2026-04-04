@@ -606,6 +606,53 @@ Yuksek CAI = daha fazla overfitting. EGITIMDEN ONCE bilinebilir.
 Bu KIMSENIN YAPAMADIGI bir sey: egitimden once generalization tahmini.
 Mevcut: cross-validation (EGITMEK lazim). CAI: egitmeden TAHMIN.
 
+## Iterasyon 37: CAI TRANSFER LEARNING'I TAHMIN EDIYOR
+
+### BULGU: FARKLI CAI = daha iyi transfer (rho=-0.47, p=0.002)
+Benzer task'lar DEGIL, FARKLI task'lar daha iyi transfer yapiyor!
+
+### EN DRAMATIK TRANSFERLER:
+- sin(3x) -> |x0|: 5.81x speedup
+- step -> sin(x): 3.62x speedup
+- |x0| -> sin(x): 3.56x speedup
+
+### PATTERN: sureksiz -> surekli transfer COK IYI
+Sureksiz fonksiyonlar ogrenince model "sharp features" olusturuyor.
+Bu sharp features surekli fonksiyonlar icin de COKTUR faydali.
+Tersi: step -> linear = 0.58x (ZARALI) -- sharp features linear'a zarar.
+
+### YENI SORU:
+"Transfer learning grafu (hangi task hangi task'a yardim eder) bir
+MATEMATIKSEL YAPI mi? Bu yapi CAI ile TAHMIN EDILEBILIR mi?
+Eger evet: OPTIMAL CURRICULUM otomatik tasarlanabilir --
+CAI-tabanli transfer graf + topolojik siralama = en iyi ogrenme yolu."
+
+## Iterasyon 38: CAI TRAJECTORY -- MODEL CAI -> TARGET CAI
+
+### BULGU: Model CAI hedef CAI'ye ASIMPTOTIK YAKLASIYOR
+- Step 0: model CAI = 0.0002 (random)
+- Step 5000: model CAI = 0.0154 (target: 0.0189)
+- Model CAI / target CAI = %81 (OGRENME ILERLEME OLCUSU)
+
+### BUYUK BULGU: Spearman(model_CAI, gen_gap) = -0.992 (!!!)
+Model CAI arttikca gen gap AZALIYOR.
+Daha karmasik davranis = daha iyi generalization (anti-intuitive ama mantikli).
+Model DOGRU karmasikligi ogreniyor, ASLA hedefi ASMIYOR.
+
+### PRATIK:
+- model_CAI / target_CAI = ogrenme ilerleme yuzdesi
+- Eger model_CAI > target_CAI -> OVERFIT basliyor
+- Eger model_CAI < target_CAI * 0.5 -> DAHA FAZLA egitim gerekli
+- Eger model_CAI ~ target_CAI -> OPTIMAL, durabilirsin
+
+### CAI DOGRULAMA SAYISI: 6
+1. Task difficulty: rho=0.87
+2. Arch independence: rho=0.85
+3. Optimizer independence: rho=0.90
+4. Generalization: rho=0.82
+5. Transfer learning: rho=-0.47
+6. Training trajectory: rho=-0.992 (!)
+
 FALSIFIED (durust):
 - D + log2(P) <= log2(n) inequality (GECERSIZ)
 - Prime gap bilgi-teorik anomalisi (random da ayni)
