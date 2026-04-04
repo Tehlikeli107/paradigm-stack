@@ -1045,3 +1045,27 @@ Iris (rho=0.97), Wine (rho=1.00), Digits (rho=0.60)
 ### GRADE GUNCELLEME: B -> B+
 Gercek sklearn verilerinde de calisiyor. Tutarli bulgu.
 
+
+
+## Iterasyon 63: 4 DATASET x 4 CLASSIFIER = 16 TEST
+
+### SONUCLAR:
+- Mean rho: +0.661
+- Easiest class: 14/16 correct (88%)
+- Hardest class: 10/16 correct (62%)
+- Total: 24/32 correct (75%)
+- Cancer: rho=1.000 TUM classifier'larda
+- Wine: RF/GBT icin iyi, SVM/KNN icin KOTU
+
+### MODEL BAGIMSIZLIGI: KISMI
+RF/GBT (agac-tabanli): Fisher IYI calisiyor
+SVM/KNN (uzaklik-tabanli): Fisher BAZEN basarisiz
+Neden: Fisher EUCLIDEAN uzaklik kullaniyor, SVM KERNEL uzayi kullaniyor.
+
+### PRATIK CIKTI:
+Fisher difficulty predictor EN IYI RF/GBT modellerle kullanilmali.
+SVM/KNN icin kernel-aware difficulty metric gerekli.
+
+### CUMULATIVE VALIDATION: 7+ dataset, 4 classifier, 16 test
+75% overall accuracy. TUTARLI ama MUKEMMEL DEGIL.
+
