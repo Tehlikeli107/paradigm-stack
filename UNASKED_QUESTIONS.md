@@ -1069,3 +1069,118 @@ SVM/KNN icin kernel-aware difficulty metric gerekli.
 ### CUMULATIVE VALIDATION: 7+ dataset, 4 classifier, 16 test
 75% overall accuracy. TUTARLI ama MUKEMMEL DEGIL.
 
+
+
+## Iterasyon 64: Fashion-MNIST (10K sample, 10 class)
+
+### SONUC: rho=+0.42 (ZAYIF) ama en zor sinif DOGRU
+- Predicted hardest: Shirt -> Actual: Shirt (54.6%) -- CORRECT!
+- Predicted easiest: Sneaker -> Actual: Bag (96.4%) -- WRONG
+- Bag paradoxu: pixel-space'de yakin ama shape olarak FARKLI
+
+### DERS: Pixel-space Fisher SINIRLI
+Basit goruntuler (CIFAR): CALISIYOR (rho=0.72-0.90)
+Karmasik goruntuler (Fashion-MNIST): KISMI (rho=0.42)
+Feature-space Fisher (CNN embedding) DAHA IYI olur.
+
+### CUMULATIVE VALIDATION TABLE:
+Dataset         | Metric    | rho   | p      | Easy | Hard
+Toy functions   | CAI       | 0.903 | 0.0003 | -    | -
+CIFAR-10 pairs  | Distance  | 0.790 | 0.006  | -    | -
+CIFAR-10 10cls  | Fisher    | 0.588 | 0.074  | ship | cat
+Iris            | Fisher    | 0.970 | -      | 0    | 1
+Wine            | Fisher    | 1.000 | -      | 2    | 1
+Digits          | Fisher    | 0.596 | 0.069  | 0    | 8(9)
+Cancer          | Fisher    | 1.000 | -      | -    | -
+Fashion-MNIST   | Fisher    | 0.418 | 0.229  | Snk  | Shirt
+4 clf x 4 data  | Fisher    | 0.661 | -      | 88%  | 62%
+
+
+
+## Iterasyon 67: FUNCTION SPACE TOPOLOGY (NOVEL!)
+
+### 200 model, ayni task, farkli seed. Function space distance matrix.
+
+### BULGU 1: Iyi cozumler KUMELENIYOR
+- Good-good dist: 0.022, Bad-bad: 0.073, Good-bad: 0.055
+- Iyi cozumler 3x daha yakin birbirine
+
+### BULGU 2: Outlier = kotu (rho=+0.89)
+Merkeze yakin = iyi, merkezden uzak = kotu.
+Fonksiyon uzayinin MERKEZI = BASIN OF ATTRACTION.
+
+### BULGU 3: Intrinsic dimensionality = 44-51
+200 boyutlu uzayda 50 boyut kullaniliyor.
+
+### BULGU 4: Connectivity -- p75'te 6 component, p90'da 1
+Fonksiyon uzayi yeterli threshold'da TEK BAGLI.
+
+### NOVEL: Bu function space (output space) topolojisi.
+Loss landscape literaturU WEIGHT SPACE topolojisini inceler.
+Biz FUNCTION SPACE topolojisini olctuk -- farkli nesne.
+
+### SORU: Fonksiyon uzayinin merkezine DOGRUDAN gidebilir miyiz?
+Eger merkez = iyi cozum, o zaman:
+'ogrenme = merkeze yakinsama' degil mi?
+Eger merkezin KONUMUNU ONCEDEN BILEBILIRSEK,
+egitimi ATLAYIP dogrudan merkeze gidebilir miyiz?
+
+Bu ENSEMBLE AVERAGING'in neden calistigini ACIKLIYOR:
+birden fazla modelin ORTALAMASI = fonksiyon uzayinin MERKEZI
+= EN IYI COZUM. Ensemble MERKEZE yaklasiyor.
+
+
+
+## Iterasyon 68: Ensemble KOTU cunku modeller cok koreleli
+
+### BULGU: Ensemble of 100 BEST INDIVIDUAL'DAN %46 KOTU
+- Individual best: 0.0320
+- Ensemble 100: 0.0467
+- Avg pairwise correlation: 0.991 (neredeyse identik)
+
+### NEDEN: Modeller DIVERSSE degil -- hepsi AYNI fonksiyonu ogreniyor
+Ayni mimari + ayni data + ayni optimizer = tek cozum
+Ensemble DIVERSITY gerektirir, bizde diversity YOK.
+
+### DERIN BULGU: Fonksiyon uzayinda TEK BIR BASIN var
+200 model, hepsi AYNI fonksiyona yaklasiyor (corr=0.991).
+Farkli seed'ler farkli WEIGHT'lere gidiyor ama 
+AYNI FONKSIYONU uretiyorlar.
+Bu 'loss landscape has one basin' in FUNCTION SPACE kaniti.
+
+### SORU: Eger tek basin varsa, FARKLI MIMARILAR ayni basine mi gider?
+Ayni fonksiyon, farkli mimari (MLP vs CNN vs ...) ->
+ayni fonksiyon uzayi merkezine mi yaklasiyor?
+Eger evet: fonksiyon uzayindaki optimal nokta MIMARI-BAGIMSIZ.
+Bu COKTUR derin -- optimal fonksiyon DOGAYA ait, modele degil.
+
+
+
+## Iterasyon 69: TUM MIMARILER AYNI FONKSIYONA YAKLASIYOR
+
+### BULGU: Across-arch correlation = 0.978 (!!!)
+5 farkli MLP mimarisi (small/medium/large/deep/relu)
+HEPSI ayni fonksiyonu uretiyor (corr > 0.95).
+MLP_deep vs MLP_relu: 0.9991 -- NEREDEYSE IDENTIK.
+
+### Within-arch: 0.989, Across-arch: 0.978 -- FARK YOK
+Model secimi ONEMLI DEGIL (yeterli kapasite varsa).
+Optimal fonksiyon GOREVE ait, MODELE degil.
+
+### DERIN ANLAM:
+1. Ogrenme = goreve ozgu TEK fonksiyonu kesfetme
+2. Farkli mimariler = ayni hedefe farkli yollardan gitme
+3. 'Hangi model?' sorusu YANLIS -- dogru soru 'yeterli kapasite var mi?'
+4. Function space'te TEK BASIN -- tum ogrenme ORAYA gidiyor
+
+### NOVEL: Bu function-space (output-space) olcumu.
+Loss landscape literaturU weight-space'te mode connectivity inceler.
+Biz function-space'te UNIVERSALITY bulduk.
+
+### SORU: Bu SADECE BASIT gorevler icin mi gecerli?
+sin(x)*y + z^2 = kolay gorev. Belki ZOR gorevlerde
+(NLP, goruntu siniflandirma) BIRDEN FAZLA basin var?
+Eger oyle: NLP'de farkli mimariler FARKLI fonksiyonlar ogreniyor
+ve model secimi ONEMLI. Bu CAI ile BAGLANTILI:
+yuksek CAI = birden fazla basin = model secimi onemli?
+
